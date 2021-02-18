@@ -3,12 +3,11 @@ subset_agency_data <- function(agency_id) {
     filter(`Agency ID` == agency_id)
 }
 
-fill_template <- function(agency_df) {
+export_service_file <- function(agency_df) {
   
+  agency_id <- unique(agency_df$`Agency ID`)
   agency_name <- unique(agency_df$`Agency Name`)
 
-  doc <- read_docx("inputs/fy22_template.docx")
-  
   for (i in unique(agency_df$`Program ID`)) {
     
     service_df <- agency_df %>%
@@ -16,21 +15,19 @@ fill_template <- function(agency_df) {
       
     service_name <- unique(service_df$`Program Name`)
     
-    doc <- doc %>%
-      body_replace_all_text(
-        "SERVICE_ID", i, fixed = TRUE)  %>%
-      footers_replace_all_text(
-        "SERVICE_ID", i, fixed = TRUE) %>%
-      footers_replace_all_text(
-        "SERVICE_NAME", service_name, fixed = TRUE) %>%
-      body_add_docx("inputs/fy22_template.docx") %>%
-      body_replace_all_text("AGENCY_NAME", agency_name, fixed = TRUE)
+    # have to read the template in everytime since body_replace_all_text()
+    # seems to 'set' the variables, even if the R obj isn't overwritten 
+    
+    doc <- read_docx("inputs/fy22_template.docx") %>%
+      body_replace_all_text("AGENCY_NAME", agency_name, fixed = TRUE) %>%
+      body_replace_all_text("SERVICE_ID", i, fixed = TRUE)  %>%
+      footers_replace_all_text("SERVICE_ID", i, fixed = TRUE) %>%
+      body_replace_all_text("SERVICE_NAME", i, fixed = TRUE)  %>%
+      footers_replace_all_text("SERVICE_NAME", service_name, fixed = TRUE) %>%
+      print(paste0("outputs/", agency_id, "/", i, ".docx"))
       
   }
   
-  doc %>%
-    print(paste0("outputs/FY22 ", str_remove(agency_name, ":"), " Analyst Rec.docx"))
-  
-  message(str_remove(agency_name, ":"), " file exported.")
+  message(str_remove(agency_name, ":"), " service files exported.")
   
 }
