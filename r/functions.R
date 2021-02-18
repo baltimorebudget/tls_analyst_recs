@@ -16,13 +16,26 @@ export_service_file <- function(agency_df) {
     service_name <- unique(service_df$`Program Name`)
     
     dollars <- list(
-      gf_fy21 = service_df %>%
-        filter(`Fund Name` == "General") %>%
-        extract2("FY21 Adopted"),
-      gf_fy22_cls = service_df %>%
-        filter(`Fund Name` == "General") %>%
-        extract2("FY22 CLS")
+      gf = service_df %>%
+        filter(`Fund Name` == "General") %>% 
+        mutate_at(vars(starts_with("FY")), label_comma()),
+      of = service_df %>%
+        filter(`Fund Name` == "Other") %>%
+        mutate_at(vars(starts_with("FY")), label_comma())
     )
+  
+    no_funds <- tibble(
+      `FY21 Adopted` = "-",
+      `FY22 CLS` = "-",
+      `FY22 TLS` = "-")
+    
+    if (nrow(dollars$gf) == 0) {
+      dollars$gf <- no_funds
+    }
+    
+    if (nrow(dollars$of) == 0) {
+      dollars$of <- no_funds
+    }
     
     # have to read the template in everytime since body_replace_all_text()
     # seems to 'set' the variables, even if the R obj isn't overwritten 
@@ -30,8 +43,18 @@ export_service_file <- function(agency_df) {
     doc <- read_docx("inputs/fy22_service_template.docx") %>%
       body_replace_all_text("SERVICE_ID", i, fixed = TRUE)  %>%
       body_replace_all_text("SERVICE_NAME", service_name, fixed = TRUE) %>%
-      body_replace_all_text("GF_DOLLARS_FY21", label_comma()(dollars$gf_fy21), fixed = TRUE) %>%
-      body_replace_all_text("GF_DOLLARS_FY22_CLS", label_comma()(dollars$gf_fy22_cls), fixed = TRUE) %>%
+      body_replace_all_text(
+        "GF_DOLLARS_PROJECTION", dollars$gf$`FY21 Adopted`, fixed = TRUE) %>%
+      body_replace_all_text(
+        "GF_DOLLARS_PLANNING_CLS", dollars$gf$`FY22 CLS`, fixed = TRUE) %>%
+      body_replace_all_text(
+        "GF_DOLLARS_PLANNING_TLS", dollars$gf$`FY22 TLS`, fixed = TRUE) %>%
+      body_replace_all_text(
+        "OF_DOLLARS_PROJECTION", dollars$of$`FY21 Adopted`, fixed = TRUE) %>%
+      body_replace_all_text(
+        "OF_DOLLARS_PLANNING_CLS", dollars$of$`FY22 CLS`, fixed = TRUE) %>%
+      body_replace_all_text(
+        "OF_DOLLARS_PLANNING_TLS", dollars$of$`FY22 TLS`, fixed = TRUE) %>%
       body_replace_all_text("SERVICE_NAME", service_name, fixed = TRUE) %>%
       print(paste0("outputs/", agency_id, "/", i, ".docx"))
       
