@@ -1,5 +1,7 @@
 library(tidyverse)
 library(officer)
+library(magrittr)
+library(scales)
 
 source("r/functions.R")
 
@@ -7,7 +9,10 @@ line_items <- bbmR::get_last_mod(
   "G:/Fiscal Years/Fiscal 2022/Planning Year/6. TLS/1. Line Item Reports",
   ".xlsx") %>%
   readxl::read_xlsx() %>%
-  mutate_at(vars(ends_with("ID")), as.character)
+  mutate_at(vars(ends_with("ID")), as.character) %>%
+  mutate(`Fund Name` = ifelse(`Fund Name` != "General", "Other", "General")) %>%
+  group_by(`Agency ID`, `Agency Name`, `Program ID`, `Program Name`, `Fund Name`) %>%
+  summarize_if(is.numeric, sum, na.rm = TRUE)
 
 agencies <- unique(line_items$`Agency ID`)
 agencies <- agencies[1:3]

@@ -15,14 +15,24 @@ export_service_file <- function(agency_df) {
       
     service_name <- unique(service_df$`Program Name`)
     
+    dollars <- list(
+      gf_fy21 = service_df %>%
+        filter(`Fund Name` == "General") %>%
+        extract2("FY21 Adopted"),
+      gf_fy22_cls = service_df %>%
+        filter(`Fund Name` == "General") %>%
+        extract2("FY22 CLS")
+    )
+    
     # have to read the template in everytime since body_replace_all_text()
     # seems to 'set' the variables, even if the R obj isn't overwritten 
     
     doc <- read_docx("inputs/fy22_service_template.docx") %>%
       body_replace_all_text("SERVICE_ID", i, fixed = TRUE)  %>%
-      footers_replace_all_text("SERVICE_ID", i, fixed = TRUE) %>%
-      body_replace_all_text("SERVICE_NAME", service_name, fixed = TRUE)  %>%
-      footers_replace_all_text("SERVICE_NAME", service_name, fixed = TRUE) %>%
+      body_replace_all_text("SERVICE_NAME", service_name, fixed = TRUE) %>%
+      body_replace_all_text("GF_DOLLARS_FY21", label_comma()(dollars$gf_fy21), fixed = TRUE) %>%
+      body_replace_all_text("GF_DOLLARS_FY22_CLS", label_comma()(dollars$gf_fy22_cls), fixed = TRUE) %>%
+      body_replace_all_text("SERVICE_NAME", service_name, fixed = TRUE) %>%
       print(paste0("outputs/", agency_id, "/", i, ".docx"))
       
   }
