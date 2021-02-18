@@ -9,8 +9,14 @@ line_items <- bbmR::get_last_mod(
   readxl::read_xlsx() %>%
   mutate_at(vars(ends_with("ID")), as.character)
 
-sapply(paste0("outputs/", unique(line_items$`Agency ID`)), dir.create)
+agencies <- unique(line_items$`Agency ID`)
+agencies <- agencies[1:3]
 
-unique(line_items$`Agency ID`) %>%
+sapply(paste0("outputs/", agencies), dir.create)
+  
+agencies %>%
   lapply(subset_agency_data) %>%
   lapply(export_service_file)
+
+agencies %>%
+  lapply(compile_agency_doc)
