@@ -1,18 +1,27 @@
 library(tidyverse)
 library(officer)
+library(magrittr)
+library(scales)
+library(bbmR)
 
-template <- read_docx("inputs/fy22_template.docx") 
+source("r/prepare_data.R")
+source("r/make_word_docs.R")
 
-agency <- "Board of Elections"
-service_id <- "100"
-service_name <- "Fair Conduct"
+data <- import_data(
+  tls_line_item_path = "G:/Fiscal Years/Fiscal 2022/Planning Year/6. TLS/1. Line Item Reports",
+  tls_position_path = "G:/Fiscal Years/Fiscal 2022/Planning Year/6. TLS/2. Position Reports",
+  cls_position_file = "G:/Fiscal Years/Fiscal 2022/Planning Year/1. CLS/2. Position Reports/PositionsSalariesOpcs_2020-10-26_CLS_FINAL.xlsx",
+  projection_position_file = "G:/Fiscal Years/Fiscal 2021/Planning Year/7. Council/2. Position Reports/PositionsSalariesOpcs - COU_2020-06-17_FINAL.xlsx"
+)
 
-doc <- template %>%
-  body_replace_all_text("AGENCY_NAME", agency, fixed = TRUE) %>%
-  body_replace_all_text("SERVICE_ID", service_id, fixed = TRUE)  %>%
-  footers_replace_all_text("SERVICE_ID", service_id, fixed = TRUE) %>%
-  body_replace_all_text("SERVICE_NAME", service_name, fixed = TRUE) %>%
-  footers_replace_all_text("SERVICE_NAME", service_name, fixed = TRUE) %>%
-  body_add_docx("inputs/fy22_template.docx")
+agencies <- unique(data$line_items$`Agency ID`)
+agencies <- agencies[1:3]
 
-print(doc, paste0("outputs/", agency, ".docx"))
+sapply(paste0("outputs/", agencies), dir.create)
+  
+agencies %>%
+  lapply(subset_agency_data, data) %>%
+  lapply(export_service_file)
+
+agencies %>%
+  lapply(compile_agency_doc)
